@@ -7,14 +7,12 @@ import uvicorn
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.responses import HTMLResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi_mcp import FastApiMCP
 
 app = FastAPI()
 
-mcp = FastApiMCP(app)
-
-mcp.mount_http()
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 templates = Jinja2Templates(directory="templates")
 
@@ -58,7 +56,7 @@ async def read_item(request: Request):
         request=request,
         name="index.html",
         context={
-            "title": "github.com/wujunwei928/parse-video-py Demo",
+            "title": "在线短视频去水印解析",
         },
     )
 
@@ -90,7 +88,5 @@ async def video_id_parse(source: VideoSource, video_id: str):
         }
 
 
-mcp.setup_server()
-
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=12304)

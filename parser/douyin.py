@@ -14,7 +14,14 @@ class DouYin(BaseParser):
     抖音 / 抖音火山版
     """
 
+    @staticmethod
+    def get_default_headers() -> dict:
+        return {
+            "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1",
+        }
+
     async def parse_share_url(self, share_url: str) -> VideoInfo:
+        print(f"[DouYin] Parsing share URL: {share_url}", flush=True)
         # 解析URL获取域名
         parsed_url = urlparse(share_url)
         host = parsed_url.netloc
@@ -34,20 +41,24 @@ class DouYin(BaseParser):
         else:
             raise ValueError(f"Douyin not support this host: {host}")
 
+        print(f"[DouYin] Requesting video page: {share_url}", flush=True)
         async with httpx.AsyncClient(follow_redirects=True) as client:
             response = await client.get(share_url, headers=self.get_default_headers())
             response.raise_for_status()
 
         # 检查是否是图集内容
         is_note = self._is_note_content(response.text, share_url)
+        print(f"[DouYin] Is note content: {is_note}", flush=True)
 
         json_data = None
         if is_note:
+            print("[DouYin] Fetching slides info via API...", flush=True)
             # 如果是图集，使用专门的API获取数据
             json_data = await self._get_slides_info(video_id)
 
         if not json_data:
             # 如果专用API失败或者不是图集，使用标准解析方式
+            print("[DouYin] Extracting _ROUTER_DATA from HTML...", flush=True)
             pattern = re.compile(
                 pattern=r"window\._ROUTER_DATA\s*=\s*(.*?)</script>",
                 flags=re.DOTALL,
@@ -55,9 +66,25 @@ class DouYin(BaseParser):
             find_res = pattern.search(response.text)
 
             if not find_res or not find_res.group(1):
-                raise ValueError("parse video json info from html fail")
-
-            json_data = json.loads(find_res.group(1).strip())
+                # Try RENDER_DATA as fallback
+                print("[DouYin] _ROUTER_DATA not found, trying RENDER_DATA...", flush=True)
+                pattern_render = re.compile(r"id=\"RENDER_DATA\"\s*type=\"application\/json\">(.*?)<\/script>", re.DOTALL)
+                match_render = pattern_render.search(response.text)
+                if match_render:
+                    from urllib.parse import unquote
+                    try:
+                        json_data = json.loads(unquote(match_render.group(1).strip()))
+                        print("[DouYin] Found RENDER_DATA", flush=True)
+                    except Exception as e:
+                        print(f"[DouYin] Failed to parse RENDER_DATA: {e}", flush=True)
+                
+                if not json_data:
+                    print(f"[DouYin] HTML content length: {len(response.text)}", flush=True)
+                    # print(f"[DouYin] HTML preview: {response.text[:500]}", flush=True)
+                    raise ValueError("parse video json info from html fail")
+            else:
+                json_data = json.loads(find_res.group(1).strip())
+                print("[DouYin] Found _ROUTER_DATA", flush=True)
 
         # 处理不同的数据结构
         data = None

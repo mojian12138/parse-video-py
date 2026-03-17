@@ -6,8 +6,9 @@
     <meta name="renderer" content="webkit"/>
     <meta name="force-rendering" content="webkit"/>
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+    <link rel="icon" type="image/png" href="static/favicon.png">
     <title>{{ title }}</title>
-    <link rel="icon" type="image/png" href="favicon.png">
+    <!-- <link rel="icon" type="image/png" href="favicon.png"> -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mdui@1.0.0/dist/css/mdui.min.css"/>
     <script src="https://cdn.jsdelivr.net/npm/mdui@1.0.0/dist/js/mdui.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -2770,7 +2771,7 @@
 
 <script>
 // 主题管理
-let currentTheme = localStorage.getItem('selectedTheme') || 'original';
+let currentTheme = localStorage.getItem('selectedTheme') || 'starry';
 
 function toggleThemeSelector() {
     const selector = document.getElementById('themeSelector');
@@ -2854,7 +2855,7 @@ function setValue() {
         xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
     }
 
-    xmlhttp.open("GET", "/video/share/url/parse?url=" + encodeURIComponent(v), false);
+    xmlhttp.open("GET", "video/share/url/parse?url=" + encodeURIComponent(v), false);
     xmlhttp.send();
     var jsonObj = JSON.parse(xmlhttp.responseText);
     console.log(jsonObj);
